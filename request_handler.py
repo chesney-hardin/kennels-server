@@ -1,6 +1,6 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from views import get_all_animals, get_single_animal, get_all_locations, get_single_location, get_single_employee, get_all_employees, get_single_customer, get_all_customers
+from views import get_all_animals, get_single_animal, get_all_locations, get_single_location, create_location, get_single_employee, get_all_employees, create_employee, get_single_customer, get_all_customers, create_customer, create_animal
 
 
 # Here's a class. It inherits from another class.
@@ -89,8 +89,49 @@ class HandleRequests(BaseHTTPRequestHandler):
 
         content_len = int(self.headers.get('content-length', 0))
         post_body = self.rfile.read(content_len)
-        response = {"payload": post_body}
-        self.wfile.write(json.dumps(response).encode())
+        
+        # Convert JSON string to a Python dictionary
+        post_body = json.loads(post_body)
+
+        # Parse the URL
+        (resource, _) = self.parse_url(self.path)
+
+        # Initialize new animal
+        new_animal = None
+
+        # Add a new animal to the list.
+        if resource == "animals":
+            new_animal = create_animal(post_body)
+
+            # Encode the new animal and send in response
+            self.wfile.write(json.dumps(new_animal).encode())
+
+        # Initialize new location
+        new_location = None
+
+        # Add a new location to the list.
+        if resource == "locations":
+            new_location = create_location(post_body)
+
+            # Encode the new location and send in response
+            self.wfile.write(json.dumps(new_location).encode())
+
+        # Initialize new employee
+        new_employee = None
+
+        # Add a new employee to the list.
+        if resource == "employees":
+            new_employee = create_employee(post_body)
+
+            # Encode the new employee and send in response
+            self.wfile.write(json.dumps(new_employee).encode())
+
+                # Add a new employee to the list.
+        if resource == "customers":
+            new_customer = create_customer(post_body)
+
+            # Encode the new customer and send in response
+            self.wfile.write(json.dumps(new_customer).encode())
 
     # A method that handles any PUT request.
     def do_PUT(self):
@@ -117,9 +158,9 @@ class HandleRequests(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods',
-                         'GET, POST, PUT, DELETE')
+                        'GET, POST, PUT, DELETE')
         self.send_header('Access-Control-Allow-Headers',
-                         'X-Requested-With, Content-Type, Accept')
+                        'X-Requested-With, Content-Type, Accept')
         self.end_headers()
 
 
