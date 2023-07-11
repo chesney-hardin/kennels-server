@@ -51,3 +51,15 @@ def create_location(location):
 
     # Return the dictionary with `id` property added
     return location
+
+def delete_location(id):
+    """function to delete a function
+    """
+    location_index = -1
+
+    for index, location in enumerate(LOCATIONS):
+        if location["id"] == id:
+            location_index = index
+
+    if location_index >= 0:
+        LOCATIONS.pop(location_index)
