@@ -1,7 +1,9 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from views import get_all_animals, get_single_animal, get_all_locations, get_single_location, create_location, get_single_employee, get_all_employees, create_employee, get_single_customer, get_all_customers, create_customer, create_animal
-
+from views import get_all_animals, get_single_animal, delete_animal, create_animal
+from views import get_all_locations, get_single_location, create_location, delete_location
+from views import get_single_employee, get_all_employees, create_employee, delete_employee
+from views import get_single_customer, get_all_customers, create_customer, delete_customer
 
 # Here's a class. It inherits from another class.
 # For now, think of a class as a container for functions that
@@ -89,7 +91,7 @@ class HandleRequests(BaseHTTPRequestHandler):
 
         content_len = int(self.headers.get('content-length', 0))
         post_body = self.rfile.read(content_len)
-        
+
         # Convert JSON string to a Python dictionary
         post_body = json.loads(post_body)
 
@@ -126,12 +128,40 @@ class HandleRequests(BaseHTTPRequestHandler):
             # Encode the new employee and send in response
             self.wfile.write(json.dumps(new_employee).encode())
 
-                # Add a new employee to the list.
+        # Initialize new customer
+        new_customer = None
+
+        # Add a new customer to the list.
         if resource == "customers":
             new_customer = create_customer(post_body)
 
             # Encode the new customer and send in response
             self.wfile.write(json.dumps(new_customer).encode())
+
+    def do_DELETE(self):
+        """delete requests
+        """
+        # Set a 204 response code
+        self._set_headers(204)
+
+        # Parse the URL
+        (resource, id) = self.parse_url(self.path)
+
+        # Delete a single animal from the list
+        if resource == "animals":
+            delete_animal(id)
+
+        if resource == "locations":
+            delete_location(id)
+
+        if resource == "employees":
+            delete_employee(id)
+
+        if resource == "customers":
+            delete_customer(id)
+
+        # Do we need this??
+        #self.wfile.write("".encode())
 
     # A method that handles any PUT request.
     def do_PUT(self):
