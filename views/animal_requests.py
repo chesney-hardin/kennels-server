@@ -1,3 +1,6 @@
+from .location_requests import get_single_location
+from .customer_requests import get_single_customer
+
 ANIMALS = [
     {
         "id": 1,
@@ -45,6 +48,17 @@ def get_single_animal(id):
         if animal["id"] == id:
             requested_animal = animal
 
+            matching_location = get_single_location(requested_animal["locationId"])
+            requested_animal["location"] = matching_location
+
+            matching_customer = get_single_customer(requested_animal["customerId"])
+            requested_animal["customer"] = matching_customer
+
+            requested_animal.pop("locationId")
+            requested_animal.pop("customerId")
+            break
+
+    print(type(requested_animal))
     return requested_animal
 
 def create_animal(animal):
@@ -77,6 +91,7 @@ def delete_animal(id):
         if animal["id"] == id:
             # Found the animal. Store the current index.
             animal_index = index
+            break
 
     # If the animal was found, use pop(int) to remove it from list
     if animal_index >= 0:
