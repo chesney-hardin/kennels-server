@@ -1,6 +1,8 @@
+
 import sqlite3
 import json
 from models import Animal
+
 
 ANIMALS = [
     {
@@ -102,7 +104,9 @@ def get_single_animal(id):
                             data['status'], data['location_id'],
                             data['customer_id'])
 
+
         return animal.__dict__
+
 
 def create_animal(animal):
     """function to create new animal
@@ -134,6 +138,7 @@ def delete_animal(id):
         if animal["id"] == id:
             # Found the animal. Store the current index.
             animal_index = index
+            break
 
     # If the animal was found, use pop(int) to remove it from list
     if animal_index >= 0:
