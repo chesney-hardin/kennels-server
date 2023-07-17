@@ -1,9 +1,10 @@
 import json
+from urllib.parse import urlparse, parse_qs
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from views import get_all_animals, get_single_animal, delete_animal, create_animal, update_animal
+from views import get_animal_by_status, get_animal_by_location, get_all_animals, get_single_animal, delete_animal, create_animal, update_animal
 from views import get_all_locations, get_single_location, create_location, delete_location, update_location
-from views import get_single_employee, get_all_employees, create_employee, delete_employee, update_employee
-from views import get_single_customer, get_all_customers, create_customer, delete_customer, update_customer
+from views import get_employee_by_location, get_single_employee, get_all_employees, create_employee, delete_employee, update_employee
+from views import get_customer_by_email, get_single_customer, get_all_customers, create_customer, delete_customer, update_customer
 
 # Here's a class. It inherits from another class.
 # For now, think of a class as a container for functions that
@@ -16,28 +17,22 @@ class HandleRequests(BaseHTTPRequestHandler):
     """
 
     def parse_url(self, path):
-        """parses the url path string
-        """
-        # Just like splitting a string in JavaScript. If the
-        # path is "/animals/1", the resulting list will
-        # have "" at index 0, "animals" at index 1, and "1"
-        # at index 2.
-        path_params = path.split("/")
+        """Parse the url into the resource and id"""
+        parsed_url = urlparse(path)
+        path_params = parsed_url.path.split('/')
         resource = path_params[1]
-        id = None
 
-        # Try to get the item at index 2
+        if parsed_url.query:
+            query = parse_qs(parsed_url.query)
+            return (resource, query)
+
+        pk = None
         try:
-            # Convert the string "1" to the integer 1
-            # This is the new parseInt()
-            id = int(path_params[2])
-        except IndexError:
-            pass  # No route parameter exists: /animals
-        except ValueError:
-            pass  # Request had trailing slash: /animals/
+            pk = int(path_params[2])
+        except (IndexError, ValueError):
+            pass
+        return (resource, pk)
 
-        return (resource, id)  # This is a tuple
-    # Here's a class function
 
     # Here's a method on the class that overrides the parent's method.
     # It handles any GET request.
@@ -45,47 +40,53 @@ class HandleRequests(BaseHTTPRequestHandler):
         """Handles GET requests to the server
         """
         # Set the response code to 'Ok'
-        #self._set_headers(200)
+        self._set_headers(200)
         response = {}  # Default response
 
         # Parse the URL and capture the tuple that is returned
-        (resource, id) = self.parse_url(self.path)
+        parsed = self.parse_url(self.path)
 
-        if resource == "animals":
-            if id is not None:
-                response = get_single_animal(id)
+        # If the path does not include a query parameter, continue with the original if block
+        if '?' not in self.path:
+            ( resource, id ) = parsed
 
-            else:
-                response = get_all_animals()
+            if resource == "animals":
+                if id is not None:
+                    response = get_single_animal(id)
+                else:
+                    response = get_all_animals()
+            elif resource == "customers":
+                if id is not None:
+                    response = get_single_customer(id)
+                else:
+                    response = get_all_customers()
+            elif resource == "employees":
+                if id is not None:
+                    response = get_single_employee(id)
+                else:
+                    response = get_all_employees()
+            elif resource == "locations":
+                if id is not None:
+                    response = get_single_location(id)
+                else:
+                    response = get_all_locations()
 
-        if resource == "locations":
-            if id is not None:
-                response = get_single_location(id)
+        else: # There is a ? in the path, run the query param functions
+            (resource, query) = parsed
 
-            else:
-                response = get_all_locations()
+            # see if the query dictionary has an email key
+            if query.get('email') and resource == 'customers':
+                response = get_customer_by_email(query['email'][0])
 
-        if resource == "employees":
-            if id is not None:
-                response = get_single_employee(id)
+            elif query.get('location_id') and resource == 'animals':
+                response = get_animal_by_location(query['location_id'][0])
 
-            else:
-                response = get_all_employees()
+            elif query.get('location_id') and resource == 'employees':
+                response = get_employee_by_location(query['location_id'][0])
 
-        if resource == "customers":
-            if id is not None:
-                response = get_single_customer(id)
+            elif query.get('status') and resource == 'animals':
+                response = get_animal_by_status(query['status'][0])
 
-            else:
-                response= get_all_customers()     
-
-        if response is not None:
-            self._set_headers(200)
-
-        else:
-            self._set_headers(404)     
-
-        # Send a JSON formatted string as a response
         self.wfile.write(json.dumps(response).encode())
 
     # Here's a method on the class that overrides the parent's method.
@@ -116,7 +117,7 @@ class HandleRequests(BaseHTTPRequestHandler):
 
 
         # Add a new location to the list.
-        if resource == "locations":
+        elif resource == "locations":
             if "name" and "address" in post_body:
                 new_post = create_location(post_body)
                 self._set_headers(201)
@@ -127,9 +128,9 @@ class HandleRequests(BaseHTTPRequestHandler):
             
 
         # Add a new employee to the list.
-        if resource == "employees":
+        elif resource == "employees":
             if "name" and "locationId" and "address" in post_body:
-                new_post = create_location(post_body)
+                new_post = create_employee(post_body)
                 self._set_headers(201)
                 self.wfile.write(json.dumps(new_post).encode())
             else:
@@ -137,7 +138,7 @@ class HandleRequests(BaseHTTPRequestHandler):
                 self.wfile.write("".encode())
 
         # Add a new customer to the list.
-        if resource == "customers":
+        elif resource == "customers":
 
             if "name" and "address" in post_body:
                 new_post = create_customer(post_body)
@@ -151,35 +152,25 @@ class HandleRequests(BaseHTTPRequestHandler):
         """delete requests
         """
         # Set a 204 response code
-        
+        self._set_headers(204)
 
         # Parse the URL
         (resource, id) = self.parse_url(self.path)
 
         # Delete a single animal from the list
         if resource == "animals":
-            self._set_headers(204)
             delete_animal(id)
-            self.wfile.write("".encode())
 
-        if resource == "locations":
-            self._set_headers(204)
+        elif resource == "locations":
             delete_location(id)
-            self.wfile.write("".encode())
 
-        if resource == "employees":
-            self._set_headers(204)
+        elif resource == "employees":
             delete_employee(id)
-            self.wfile.write("".encode())
 
-        if resource == "customers":
-            self._set_headers(405)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write("Method Not Allowed".encode())
+        elif resource == "customers":
+            delete_customer(id)
 
-        # Do we need this??
-        
+        self.wfile.write("".encode())
 
     # A method that handles any PUT request.
     def do_PUT(self):
@@ -197,13 +188,13 @@ class HandleRequests(BaseHTTPRequestHandler):
         if resource == "animals":
             update_animal(id, post_body)
 
-        if resource == "locations":
+        elif resource == "locations":
             update_location(id, post_body)
 
-        if resource == "employees":
+        elif resource == "employees":
             update_employee(id, post_body)
 
-        if resource == "customers":
+        elif resource == "customers":
             update_customer(id, post_body)
 
         self.wfile.write("".encode())
