@@ -45,7 +45,7 @@ class HandleRequests(BaseHTTPRequestHandler):
         """Handles GET requests to the server
         """
         # Set the response code to 'Ok'
-        self._set_headers(200)
+        #self._set_headers(200)
         response = {}  # Default response
 
         # Parse the URL and capture the tuple that is returned
@@ -77,7 +77,14 @@ class HandleRequests(BaseHTTPRequestHandler):
                 response = get_single_customer(id)
 
             else:
-                response= get_all_customers()             
+                response= get_all_customers()     
+
+        if response is not None:
+            self._set_headers(200)
+
+        else:
+            self._set_headers(404)     
+
         # Send a JSON formatted string as a response
         self.wfile.write(json.dumps(response).encode())
 
@@ -85,9 +92,6 @@ class HandleRequests(BaseHTTPRequestHandler):
     # It handles any POST request.
     def do_POST(self):
         """Handles POST requests to the server"""
-
-        # Set response code to 'Created'
-        self._set_headers(201)
 
         content_len = int(self.headers.get('content-length', 0))
         post_body = self.rfile.read(content_len)
@@ -98,70 +102,84 @@ class HandleRequests(BaseHTTPRequestHandler):
         # Parse the URL
         (resource, _) = self.parse_url(self.path)
 
-        # Initialize new animal
-        new_animal = None
+        new_post = None
 
         # Add a new animal to the list.
         if resource == "animals":
-            new_animal = create_animal(post_body)
+            if "name" and "species" and "locationId" and "customerId" and "status" in post_body:
+                new_post = create_animal(post_body)
+                self._set_headers(201)
+                self.wfile.write(json.dumps(new_post).encode())
+            else:
+                self._set_headers(400)
+                self.wfile.write("".encode())
 
-            # Encode the new animal and send in response
-            self.wfile.write(json.dumps(new_animal).encode())
-
-        # Initialize new location
-        new_location = None
 
         # Add a new location to the list.
         if resource == "locations":
-            new_location = create_location(post_body)
-
-            # Encode the new location and send in response
-            self.wfile.write(json.dumps(new_location).encode())
-
-        # Initialize new employee
-        new_employee = None
+            if "name" and "address" in post_body:
+                new_post = create_location(post_body)
+                self._set_headers(201)
+                self.wfile.write(json.dumps(new_post).encode())
+            else:
+                self._set_headers(400)
+                self.wfile.write("".encode())
+            
 
         # Add a new employee to the list.
         if resource == "employees":
-            new_employee = create_employee(post_body)
-
-            # Encode the new employee and send in response
-            self.wfile.write(json.dumps(new_employee).encode())
-
-        # Initialize new customer
-        new_customer = None
+            if "name" and "locationId" and "address" in post_body:
+                new_post = create_location(post_body)
+                self._set_headers(201)
+                self.wfile.write(json.dumps(new_post).encode())
+            else:
+                self._set_headers(400)
+                self.wfile.write("".encode())
 
         # Add a new customer to the list.
         if resource == "customers":
-            new_customer = create_customer(post_body)
 
-            # Encode the new customer and send in response
-            self.wfile.write(json.dumps(new_customer).encode())
+            if "name" and "address" in post_body:
+                new_post = create_customer(post_body)
+                self._set_headers(201)
+                self.wfile.write(json.dumps(new_post).encode())
+            else:
+                self._set_headers(400)
+                self.wfile.write("".encode())
 
     def do_DELETE(self):
         """delete requests
         """
         # Set a 204 response code
-        self._set_headers(204)
+        
 
         # Parse the URL
         (resource, id) = self.parse_url(self.path)
 
         # Delete a single animal from the list
         if resource == "animals":
+            self._set_headers(204)
             delete_animal(id)
+            self.wfile.write("".encode())
 
         if resource == "locations":
+            self._set_headers(204)
             delete_location(id)
+            self.wfile.write("".encode())
 
         if resource == "employees":
+            self._set_headers(204)
             delete_employee(id)
+            self.wfile.write("".encode())
 
         if resource == "customers":
-            delete_customer(id)
+            self._set_headers(405)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write("Method Not Allowed".encode())
 
         # Do we need this??
-        #self.wfile.write("".encode())
+        
 
     # A method that handles any PUT request.
     def do_PUT(self):
@@ -188,6 +206,7 @@ class HandleRequests(BaseHTTPRequestHandler):
         if resource == "customers":
             update_customer(id, post_body)
 
+        self.wfile.write("".encode())
 
     def _set_headers(self, status):
         # Notice this Docstring also includes information about the arguments passed to the function
