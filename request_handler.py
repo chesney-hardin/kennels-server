@@ -151,26 +151,35 @@ class HandleRequests(BaseHTTPRequestHandler):
         """delete requests
         """
         # Set a 204 response code
-        self._set_headers(204)
+        
 
         # Parse the URL
         (resource, id) = self.parse_url(self.path)
 
         # Delete a single animal from the list
         if resource == "animals":
+            self._set_headers(204)
             delete_animal(id)
+            self.wfile.write("".encode())
 
         if resource == "locations":
+            self._set_headers(204)
             delete_location(id)
+            self.wfile.write("".encode())
 
         if resource == "employees":
+            self._set_headers(204)
             delete_employee(id)
+            self.wfile.write("".encode())
 
         if resource == "customers":
-            delete_customer(id)
+            self._set_headers(405)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write("Method Not Allowed".encode())
 
         # Do we need this??
-        self.wfile.write("".encode())
+        
 
     # A method that handles any PUT request.
     def do_PUT(self):
