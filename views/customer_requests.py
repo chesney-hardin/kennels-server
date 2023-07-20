@@ -71,7 +71,7 @@ def get_customer_by_email(email):
 
         # Write the SQL query to get the information you want
         db_cursor.execute("""
-        select
+        SELECT
             c.id,
             c.name,
             c.address,
@@ -123,7 +123,27 @@ def delete_customer(id):
 def update_customer(id, new_customer):
     """updates a customer object
     """
-    for index, customer in enumerate(CUSTOMERS):
-        if customer["id"] == id:
-            CUSTOMERS[index] = new_customer
-            break        
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+
+        db_cursor.execute("""
+        UPDATE Customer
+            SET
+                name = ?,
+                address = ?,
+                email = ?,
+                password = ?,
+        WHERE id = ?
+        """, (new_customer['name'], new_customer['address'],
+            new_customer['email'], new_customer['password'],
+            id, ))
+
+        rows_affected = db_cursor.rowcount
+
+    if rows_affected == 0:
+        # Forces 404 response by main module
+        return False
+    else:
+        # Forces 204 response by main module
+        return True
+    
