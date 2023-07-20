@@ -87,8 +87,17 @@ def get_single_animal(id):
             a.breed,
             a.status,
             a.location_id,
-            a.customer_id
-        FROM animal a
+            a.customer_id,
+            l.name location_name,
+            l.address location_address,
+            c.name customer_name,
+            c.address customer_address,
+            c.email customer_email
+        FROM Animal a
+        JOIN Location l 
+            ON l.id = a.location_id
+        JOIN Customer c
+            ON c.id = a.customer_id
         WHERE a.id = ?
         """, (id, ))
 
@@ -99,6 +108,17 @@ def get_single_animal(id):
         animal = Animal(data['id'], data['name'], data['breed'],
                         data['status'], data['location_id'],
                         data['customer_id'])
+        
+        # Create a Location instance from the current row
+        location = Location(data['id'], data['location_name'], data['location_address'])
+
+            # Create a Customer instance from the current data
+        customer = Customer(data['id'], data['customer_name'], data['customer_address'], 
+                                data['customer_email'])
+
+            # Add the dictionary representation of the location to the animal
+        animal.location = location.__dict__
+        animal.customer = customer.__dict__
 
         return animal.__dict__
 
